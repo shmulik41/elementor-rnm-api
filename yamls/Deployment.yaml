@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elementor-rnm-api
+  labels:
+    app: elementor-rnm-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elementor-rnm-api
+  template:
+    metadata:
+      labels:
+        app: elementor-rnm-api
+    spec:
+      containers:
+        - name: api
+          image: elementor-rnm:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rnm-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /healthcheck
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rnm.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rnm-service
+                port:
+                  number: 80
+
+
+
+
+
