@@ -32,21 +32,32 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v3
 
-      - name: Deploy with Helm (override image to local)
+      - name: Deploy with Helm (use local image, avoid pulling)
         run: |
           helm upgrade --install elementor-rnm-api ./helm \
             --set image.repository=elementor-rnm-api \
-            --set image.tag=latest
+            --set image.tag=latest \
+            --set image.pullPolicy=IfNotPresent \
+            --set ingress.enabled=false
 
       - name: Wait for rollout
         run: |
-          kubectl rollout status deployment/elementor-rnm-api --timeout=180s
           kubectl get pods -o wide
-          kubectl get svc -o wide
+          kubectl rollout status deployment/elementor-rnm-api --timeout=180s
 
       - name: Smoke test (healthcheck or root)
         run: |
           kubectl run curl --image=curlimages/curl:8.10.1 --restart=Never --rm -i -- \
             sh -c "curl -sf http://elementor-rnm-api/healthcheck || curl -sf http://elementor-rnm-api/"
 
+      - name: Debug on failure (describe & logs)
+        if: failure()
+        run: |
+          echo "==== Deploy describe ===="; kubectl describe deploy elementor-rnm-api || true
+          echo "==== Pods ===="; kubectl get pods -o wide || true
+          POD=$(kubectl get pod -l app=elementor-rnm-api -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          if [ -n "$POD" ]; then
+            echo "==== Pod describe ($POD) ===="; kubectl describe pod "$POD" || true
+            echo "==== Pod logs ($POD) ===="; kubectl logs "$POD" || true
+          fi
 
