@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ .Chart.Name }}
+  name: elementor-rnm-api
   labels:
-    app: {{ .Chart.Name }}
+    app: elementor-rnm-api
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ .Chart.Name }}
+    name: elementor-rnm-api
   minReplicas: {{ .Values.hpa.minReplicas }}
   maxReplicas: {{ .Values.hpa.maxReplicas }}
   metrics:

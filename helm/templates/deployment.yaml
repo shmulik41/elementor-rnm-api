@@ -1,41 +1,48 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Chart.Name }}
+  name: elementor-rnm-api
   labels:
-    app: {{ .Chart.Name }}
+    app: elementor-rnm-api
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Chart.Name }}
+      app: elementor-rnm-api
   template:
     metadata:
       labels:
-        app: {{ .Chart.Name }}
+        app: elementor-rnm-api
     spec:
       containers:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.port }}
+            - containerPort: {{ .Values.containerPort }}
+          {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
-            {{- if .Values.livenessProbe.enabled }}
             httpGet:
               path: {{ .Values.livenessProbe.path }}
               port: {{ .Values.livenessProbe.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            {{- end }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
-            {{- if .Values.readinessProbe.enabled }}
             httpGet:
               path: {{ .Values.readinessProbe.path }}
               port: {{ .Values.readinessProbe.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            {{- end }}
-          resources: {{- toYaml .Values.resources | nindent 12 }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          {{- end }}
+          resources:
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+
 
 

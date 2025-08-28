@@ -1,46 +1,51 @@
 replicaCount: 1
 
 image:
-  repository: nginx
+  repository: elementor-rnm-api
   tag: latest
   pullPolicy: IfNotPresent
+
+containerPort: 5000
 
 service:
   type: ClusterIP
   port: 80
+  targetPort: 5000
+
+ingress:
+  enabled: false
+  className: nginx
+  host: myapi.local
+  path: /
 
 resources:
-  requests:
-    cpu: "100m"
-    memory: "128Mi"
   limits:
-    cpu: "200m"
-    memory: "256Mi"
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
 livenessProbe:
   enabled: true
-  path: /
-  port: 80
+  path: /healthcheck
+  port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 10
 
 readinessProbe:
   enabled: true
-  path: /
-  port: 80
+  path: /healthcheck
+  port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 10
 
 hpa:
-  enabled: true
+  enabled: false        # ב-KIND אין metrics-server, השאר false
   minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 50
 
-ingress:
-  enabled: true
-  className: nginx
-  host: myapi.local
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-  tls: false
-  tlsSecret: ""
 
 
 
