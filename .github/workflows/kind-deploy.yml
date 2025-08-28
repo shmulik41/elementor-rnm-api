@@ -21,7 +21,7 @@ jobs:
         with:
           cluster_name: kind
 
-      - name: Build Docker image (local tag for KIND)
+      - name: Build Docker image (local for KIND)
         run: |
           docker build -t elementor-rnm-api:latest .
 
@@ -32,12 +32,12 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v3
 
-      - name: Deploy with Helm (use local image, avoid pulling)
+      - name: Helm upgrade/install (use local image, avoid pulling)
         run: |
           helm upgrade --install elementor-rnm-api ./helm \
             --set image.repository=elementor-rnm-api \
             --set image.tag=latest \
-            --set image.pullPolicy=IfNotPresent \
+            --set image.pullPolicy=Never \
             --set ingress.enabled=false
 
       - name: Wait for rollout
@@ -45,19 +45,21 @@ jobs:
           kubectl get pods -o wide
           kubectl rollout status deployment/elementor-rnm-api --timeout=180s
 
-      - name: Smoke test (healthcheck or root)
+      - name: Smoke test (cluster-internal)
         run: |
           kubectl run curl --image=curlimages/curl:8.10.1 --restart=Never --rm -i -- \
             sh -c "curl -sf http://elementor-rnm-api/healthcheck || curl -sf http://elementor-rnm-api/"
 
-      - name: Debug on failure (describe & logs)
+      - name: Debug on failure (events, describe & logs)
         if: failure()
         run: |
+          echo "==== Events (last) ===="; kubectl get events --sort-by=.lastTimestamp -A | tail -n 200 || true
           echo "==== Deploy describe ===="; kubectl describe deploy elementor-rnm-api || true
           echo "==== Pods ===="; kubectl get pods -o wide || true
           POD=$(kubectl get pod -l app=elementor-rnm-api -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
           if [ -n "$POD" ]; then
             echo "==== Pod describe ($POD) ===="; kubectl describe pod "$POD" || true
+            echo "==== Pod image ===="; kubectl get pod "$POD" -o jsonpath='{.spec.containers[*].image}'; echo
             echo "==== Pod logs ($POD) ===="; kubectl logs "$POD" || true
           fi
 
